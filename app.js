@@ -77,7 +77,17 @@ $('#employeeForm').onsubmit=async(e)=>{
  e.preventDefault(); $('#employeeFormMsg').textContent='직원 계정을 생성하는 중...';
  const payload={name:$('#empName').value.trim(),email:$('#empEmail').value.trim(),job_description:$('#empJob').value.trim(),access_enabled:$('#empAccess').checked};
  const {data,error}=await db.functions.invoke('create-employee',{body:payload});
- if(error){$('#employeeFormMsg').textContent='등록 실패: '+error.message;return}
+ if(error){
+   let detail=error.message;
+   try{
+     if(error.context instanceof Response){
+       const body=await error.context.clone().json();
+       if(body?.error) detail=body.error;
+     }
+   }catch(_){}
+   $('#employeeFormMsg').textContent='등록 실패: '+detail;
+   return
+ }
  if(data?.error){$('#employeeFormMsg').textContent='등록 실패: '+data.error;return}
  $('#employeeFormMsg').textContent='직원을 등록했고 초대 메일을 발송했습니다.';
  setTimeout(()=>{ $('#employeeDialog').close(); $('#employeeForm').reset(); loadAdmin(); },900);
