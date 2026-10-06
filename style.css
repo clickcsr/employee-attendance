@@ -6,3 +6,12 @@
 
 .otApprovedItem{width:100%;text-align:left;border:1px solid #d8dee8;cursor:pointer;font-family:inherit}
 .otApprovedItem:hover{background:#e9eef7}
+
+.calEvents,.adminCalDetails{margin-top:6px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.calEvent{display:block;width:100%;padding:4px 5px;border-radius:5px;font-size:10px;line-height:1.25;color:#263238;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0}
+.calEvent.normal{background:#B7E5B4}
+.calEvent.half{background:#FFFC9B}
+.calEvent.overtime{background:#FFA447}
+.calEvent.annual{background:#F28585}
+button.calEvent{cursor:pointer;font-family:inherit}
+@media(max-width:760px){.calEvent{font-size:9px;padding:3px 4px}}
