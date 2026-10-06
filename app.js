@@ -111,7 +111,7 @@ function actionFields(){
  return:'<label>복귀일<input id="mDate" type="date" required></label>',
  terminate:'<label>퇴사일<input id="mDate" type="date" required></label><label>퇴사 사유<input id="mReason"></label>',
  accessOn:'<p class="muted">직원의 웹사이트 로그인을 허용합니다.</p>',
- accessOff:'<p class="muted">과거 데이터는 유지하고 웹사이트 로그인만 차단합니다.</p>'
+ accessOff:'<p class="muted">과거 데이터는 유지하고 웹사이트 로그인만 차단합니다.</p>',tempPassword:'<label>새 임시 비밀번호<input id="mPassword" type="password" minlength="8" required></label><label>비밀번호 확인<input id="mPassword2" type="password" minlength="8" required></label><p class="muted">기존 비밀번호는 조회되지 않으며 새 비밀번호로만 재설정됩니다.</p>'
  }; $('#actionFields').innerHTML=map[a]||''
 }
 function openManage(id,ps,histories){const p=ps.find(x=>x.id===id),hs=histories.filter(x=>x.employee_id===id);$('#manageEmployeeId').value=id;$('#manageTitle').textContent=p.name+' 직원 관리';$('#manageSummary').innerHTML='담당업무: '+(p.job_description||'-')+'<br>재직 이력: '+(hs.length?hs.map(x=>x.hire_date+' ~ '+(x.termination_date||'현재')).join('<br>'):'없음');$('#manageAction').value=hs.some(x=>['active','leave'].includes(x.status))?'leaveGrant':'hire';actionFields();$('#manageDialog').showModal()}
@@ -125,6 +125,7 @@ $('#manageForm').onsubmit=async e=>{e.preventDefault();const id=$('#manageEmploy
  if(a==='terminate'){const cur=await active();if(!cur){err={message:'현재 재직 이력이 없습니다.'}}else{err=(await db.from('employment_history').update({status:'terminated',termination_date:$('#mDate').value,termination_reason:$('#mReason').value||null}).eq('id',cur.id)).error;if(!err)err=(await db.from('profiles').update({employment_status:'retired',access_enabled:false}).eq('id',id)).error}}
  if(a==='accessOn')err=(await db.from('profiles').update({access_enabled:true}).eq('id',id)).error;
  if(a==='accessOff')err=(await db.from('profiles').update({access_enabled:false}).eq('id',id)).error;
+ if(a==='tempPassword'){const pw=$('#mPassword').value,pw2=$('#mPassword2').value;if(pw.length<8){err={message:'비밀번호는 8자 이상이어야 합니다.'}}else if(pw!==pw2){err={message:'두 비밀번호가 일치하지 않습니다.'}}else{const r=await db.functions.invoke('reset-employee-password',{body:{employee_id:id,password:pw}});if(r.error)err={message:r.error.message};else if(r.data?.error)err={message:r.data.error}}}
  if(err){$('#manageMsg').textContent='처리 실패: '+err.message;return}$('#manageMsg').textContent='처리되었습니다.';setTimeout(()=>{$('#manageDialog').close();loadAdmin()},600)
 };
 $('#addEmployee').onclick=()=>$('#employeeDialog').showModal();
