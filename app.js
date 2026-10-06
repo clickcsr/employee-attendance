@@ -34,6 +34,16 @@ async function loadEmployee(p){$('#employeeName').textContent=p.name+'님';$('#e
 $('#checkIn').onclick=async()=>{const {data:{user}}=await db.auth.getUser();const {error}=await db.from('attendance').insert({employee_id:user.id,work_date:kstDate(),check_in:new Date().toISOString()});if(error)return alert(error.message);location.reload()};
 $('#checkOut').onclick=async()=>{const {data:{user}}=await db.auth.getUser();const {error}=await db.from('attendance').update({check_out:new Date().toISOString()}).eq('employee_id',user.id).eq('work_date',kstDate());if(error)return alert(error.message);location.reload()};
 $('#overtime').onclick=()=>$('#otDialog').showModal();$('#submitOt').onclick=async e=>{e.preventDefault();const reason=$('#otReason').value.trim();if(!reason)return alert('사유를 입력하세요.');const {data:{user}}=await db.auth.getUser();const {error}=await db.from('overtime_requests').insert({employee_id:user.id,work_date:kstDate(),requested_start:'16:00',requested_end:$('#otEnd').value,reason});if(error)return alert(error.message);$('#otDialog').close();alert('초과근무 신청이 등록되었습니다.')};
-$('#addEmployee').onclick=()=>alert('다음 단계에서 직원 최초 계정 생성 기능을 연결합니다.');
+$('#addEmployee').onclick=()=>$('#employeeDialog').showModal();
+$('#cancelEmployee').onclick=()=>$('#employeeDialog').close();
+$('#employeeForm').onsubmit=async(e)=>{
+ e.preventDefault(); $('#employeeFormMsg').textContent='직원 계정을 생성하는 중...';
+ const payload={name:$('#empName').value.trim(),email:$('#empEmail').value.trim(),job_description:$('#empJob').value.trim(),hire_date:$('#empHire').value||null,annual_leave_total:Number($('#empLeave').value||0),access_enabled:$('#empAccess').checked};
+ const {data,error}=await db.functions.invoke('create-employee',{body:payload});
+ if(error){$('#employeeFormMsg').textContent='등록 실패: '+error.message;return}
+ if(data?.error){$('#employeeFormMsg').textContent='등록 실패: '+data.error;return}
+ $('#employeeFormMsg').textContent='직원을 등록했고 초대 메일을 발송했습니다.';
+ setTimeout(()=>{ $('#employeeDialog').close(); $('#employeeForm').reset(); loadAdmin(); },900);
+};
 db.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){show('resetPassword')}});
 db.auth.getSession().then(({data})=>{const hash=location.hash||'';if(hash.includes('type=recovery')){show('resetPassword')}else route(data.session)});
