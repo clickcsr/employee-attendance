@@ -92,5 +92,14 @@ $('#employeeForm').onsubmit=async(e)=>{
  $('#employeeFormMsg').textContent='직원을 등록했고 초대 메일을 발송했습니다.';
  setTimeout(()=>{ $('#employeeDialog').close(); $('#employeeForm').reset(); loadAdmin(); },900);
 };
-db.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){show('resetPassword')}});
-db.auth.getSession().then(({data})=>{const hash=location.hash||'';if(hash.includes('type=recovery')){show('resetPassword')}else route(data.session)});
+db.auth.onAuthStateChange((event,session)=>{
+ if(event==='PASSWORD_RECOVERY'){document.querySelector('#resetPassword h2').textContent='새 비밀번호 설정';show('resetPassword')}
+ if(event==='SIGNED_IN' && (location.hash.includes('type=invite') || location.search.includes('type=invite'))){document.querySelector('#resetPassword h2').textContent='최초 비밀번호 설정';show('resetPassword')}
+});
+db.auth.getSession().then(({data})=>{
+ const u=(location.hash||'')+(location.search||'');
+ if(u.includes('type=recovery')||u.includes('type=invite')){
+   document.querySelector('#resetPassword h2').textContent=u.includes('type=invite')?'최초 비밀번호 설정':'새 비밀번호 설정';
+   show('resetPassword');
+ } else route(data.session)
+});
