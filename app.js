@@ -25,7 +25,7 @@ function calendar(el){
   let detail='';
   if(leave){label='';const half=leave.startsWith('__HALF__');const txt=leave.replace('__HALF__','').replace('__ANNUAL__','');detail='<span class="calEvent '+(half?'half':'annual')+'">'+txt+'</span>'}
   if(el.id==='adminCalendar'&&adminCalendarDetails[key]){
-    detail=adminCalendarDetails[key].map(x=>adminApprovedOtMap[x]?'<button type="button" class="calEvent overtime otApprovedItem" data-token="'+x+'">'+adminApprovedOtMap[x].employee_name+' '+String(adminApprovedOtMap[x].requested_start).slice(0,5)+'→'+String(adminApprovedOtMap[x].requested_end).slice(0,5)+' '+adminApprovedOtMap[x].duration</button>':x).join('');
+    detail=adminCalendarDetails[key].map(x=>adminApprovedOtMap[x]?'<button type="button" class="calEvent overtime otApprovedItem" data-token="'+x+'">'+adminApprovedOtMap[x].employee_name+' '+String(adminApprovedOtMap[x].requested_start).slice(0,5)+'→'+String(adminApprovedOtMap[x].requested_end).slice(0,5)+' '+adminApprovedOtMap[x].duration+'</button>':x).join('');
   }
   if(att?.check_in){
     const mins=att.work_minutes||minutesBetween(att.check_in,att.check_out);
