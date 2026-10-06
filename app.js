@@ -5,7 +5,7 @@ const $=s=>document.querySelector(s); const now=new Date();
 const kstDate=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const fmtMonth=d=>d.toLocaleDateString('ko-KR',{year:'numeric',month:'long',timeZone:'Asia/Seoul'});
 $('#adminMonth').textContent=fmtMonth(now); $('#employeeMonth').textContent=fmtMonth(now)+' 근태';
-let holidayMap={};
+let holidayMap={}; let employeeCalendarAttendance={}; let employeeCalendarLeaves={};
 async function loadHolidays(){
  const y=now.getFullYear();
  const {data,error}=await db.from('holidays').select('holiday_date,name').gte('holiday_date',y+'-01-01').lte('holiday_date',y+'-12-31');
@@ -19,8 +19,16 @@ function calendar(el){
  for(let i=0;i<first;i++)el.insertAdjacentHTML('beforeend','<div></div>');
  for(let d=1;d<=last;d++){
   const dt=new Date(y,m,d),w=dt.getDay(),isToday=d===now.getDate(),weekend=w===0||w===6,key=localDateKey(y,m,d),holiday=holidayMap[key];
-  const off=weekend||holiday; const label=holiday||((weekend)?'휴무':(isToday?'오늘':''));
-  el.insertAdjacentHTML('beforeend','<div class="day '+(weekend?'weekend ':'')+(holiday?'holiday ':'')+(isToday?'todayCell ':'')+'"><span class="num">'+d+'</span><small>'+label+'</small></div>')
+  const off=weekend||holiday; const att=employeeCalendarAttendance[key], leave=employeeCalendarLeaves[key];
+  let label=holiday||((weekend)?'휴무':(isToday?'오늘':''));
+  let detail='';
+  if(leave){label='연차';detail=leave}
+  if(att?.check_in){
+    const mins=att.work_minutes||minutesBetween(att.check_in,att.check_out);
+    label=timeKst(att.check_in)+'–'+(att.check_out?timeKst(att.check_out):'근무중');
+    detail=att.check_out?hm(mins):(isToday?'근무중':'퇴근 미등록');
+  }
+  el.insertAdjacentHTML('beforeend','<div class="day '+(weekend?'weekend ':'')+(holiday?'holiday ':'')+(isToday?'todayCell ':'')+'"><span class="num">'+d+'</span><small>'+label+'</small>'+(detail?'<small><b>'+detail+'</b></small>':'')+'</div>')
  }
 }
 async function refreshCalendars(){await loadHolidays();calendar($('#adminCalendar'));calendar($('#employeeCalendar'))}
@@ -90,6 +98,11 @@ async function loadEmployee(p){
  const {data:lr}=await db.from('annual_leave_requests').select('days').eq('employee_id',p.id).eq('status','approved').gte('start_date',ms).lte('start_date',me);
  const used=(lr||[]).reduce((s,x)=>s+Number(x.days||0),0); $('#leaveUsage').textContent=used+' / '+granted;
  const {data:ma}=await db.from('attendance').select('*').eq('employee_id',p.id).gte('work_date',ms).lte('work_date',me);
+ employeeCalendarAttendance=Object.fromEntries((ma||[]).map(a=>[a.work_date,a]));
+ const {data:calLeaves}=await db.from('annual_leave_requests').select('start_date,end_date,days').eq('employee_id',p.id).eq('status','approved').lte('start_date',me).gte('end_date',ms);
+ employeeCalendarLeaves={};
+ (calLeaves||[]).forEach(l=>{let d=new Date(l.start_date+'T00:00:00Z'),e=new Date(l.end_date+'T00:00:00Z');while(d<=e){const k=d.toISOString().slice(0,10);employeeCalendarLeaves[k]='연차 '+Number(l.days||0)+'일';d.setUTCDate(d.getUTCDate()+1)}});
+ calendar($('#employeeCalendar'));
  const monthMinutes=(ma||[]).reduce((s,a)=>s+(a.work_minutes||minutesBetween(a.check_in,a.check_out)),0); $('#monthHours').textContent=hm(monthMinutes);
  const {data:ots}=await db.from('overtime_requests').select('*').eq('employee_id',p.id).eq('status','approved').gte('work_date',ms).lte('work_date',me);
  const otMinutes=(ma||[]).reduce((s,a)=>s+approvedOtMinutes(a,(ots||[]).find(o=>o.work_date===a.work_date)),0); $('#monthOvertime').textContent=hm(otMinutes);
