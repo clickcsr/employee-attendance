@@ -8,7 +8,15 @@
 <section id="login" class="card login"><h2>로그인</h2><p class="muted">등록된 이메일과 비밀번호를 입력하세요.</p>
 <label>이메일<input id="userid" type="email" autocomplete="username" placeholder="name@example.com"></label>
 <label>비밀번호<input id="password" type="password" autocomplete="current-password"></label>
-<button id="loginBtn">로그인</button><p id="loginMsg" class="error"></p></section>
+<button id="loginBtn">로그인</button>
+<div style="margin-top:14px;text-align:center"><button id="forgotPassword" type="button" class="ghost">비밀번호를 잊으셨나요?</button></div>
+<p id="loginMsg" class="error"></p></section>
+<section id="resetPassword" class="card login hidden">
+<h2>새 비밀번호 설정</h2><p class="muted">새로운 비밀번호를 두 번 입력하세요.</p>
+<label>새 비밀번호<input id="newPassword" type="password" autocomplete="new-password" minlength="8"></label>
+<label>새 비밀번호 확인<input id="newPassword2" type="password" autocomplete="new-password" minlength="8"></label>
+<button id="saveNewPassword">비밀번호 변경</button><p id="resetMsg" class="error"></p>
+</section>
 <section id="admin" class="hidden">
 <div class="topline"><div><h2>관리자 대시보드</h2><p class="muted" id="adminMonth"></p></div><button id="addEmployee">+ 직원 등록</button></div>
 <div class="stats"><div class="stat"><b id="employeeCount">0</b><span>등록 직원</span></div><div class="stat"><b id="todayCount">0</b><span>오늘 출근</span></div><div class="stat"><b id="pendingCount">0</b><span>승인 대기</span></div><div class="stat"><b id="leaveCount">0</b><span>휴직</span></div></div>
