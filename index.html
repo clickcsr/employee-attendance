@@ -8,7 +8,7 @@
 <section id="login" class="card login"><h2>로그인</h2><p class="muted">등록된 이메일과 비밀번호를 입력하세요.</p>
 <label>이메일<input id="userid" type="email" autocomplete="username" placeholder="name@example.com"></label>
 <label>비밀번호<input id="password" type="password" autocomplete="current-password"></label>
-<button id="loginBtn">로그인</button>
+<button id="loginBtn">로그인</button><p id="appStatus" class="muted">프로그램 불러오는 중...</p>
 <div style="margin-top:14px;text-align:center"><button id="forgotPassword" type="button" class="ghost">비밀번호를 잊으셨나요?</button></div>
 <p id="loginMsg" class="error"></p></section>
 <section id="resetPassword" class="card login hidden">
@@ -51,4 +51,7 @@
 <label>사유<textarea id="leaveReason" placeholder="선택 입력"></textarea></label>
 <div class="dialogActions"><button value="cancel" class="ghost">취소</button><button id="submitLeave" value="default">신청</button></div></form></dialog>
 <dialog id="otDialog"><form method="dialog"><h3>초과근무 신청</h3><label>초과근무 날짜<input id="otDate" type="date"></label><label>초과근무 시작시간<input id="otStart" type="time" value="16:00"></label><label>초과근무 종료시간<input id="otEnd" type="time" value="18:00"></label><label>근무 형태<select id="otType" style="width:100%;padding:12px;margin-top:7px;border:1px solid #ccd4df;border-radius:9px"><option value="continuous">정규근무 후 연속 초과근무</option><option value="return">퇴근 후 긴급 복귀근무</option></select></label><label>사유<textarea id="otReason" placeholder="초과근무 사유를 입력하세요"></textarea></label><div class="dialogActions"><button value="cancel" class="ghost">취소</button><button id="submitOt" value="default">신청</button></div></form></dialog>
-<script src="app.js?v=20261006-2040"></script></body></html>
+<script>
+window.addEventListener('error',function(e){var s=document.getElementById('appStatus');if(s){s.textContent='프로그램 오류: '+e.message;s.className='error'}});
+window.addEventListener('unhandledrejection',function(e){var s=document.getElementById('appStatus');if(s){s.textContent='프로그램 오류: '+(e.reason?.message||e.reason||'알 수 없는 오류');s.className='error'}});
+</script><script src="app.js?v=20261006-2001"></script></body></html>
