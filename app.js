@@ -5,7 +5,7 @@ const $=s=>document.querySelector(s); const now=new Date();
 const kstDate=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const fmtMonth=d=>d.toLocaleDateString('ko-KR',{year:'numeric',month:'long',timeZone:'Asia/Seoul'});
 $('#adminMonth').textContent=fmtMonth(now); $('#employeeMonth').textContent=fmtMonth(now)+' 근태';
-let holidayMap={}; let employeeCalendarAttendance={}; let employeeCalendarLeaves={};
+let holidayMap={}; let employeeCalendarAttendance={}; let employeeCalendarLeaves={}; let adminCalendarDetails={};
 async function loadHolidays(){
  const y=now.getFullYear();
  const {data,error}=await db.from('holidays').select('holiday_date,name').gte('holiday_date',y+'-01-01').lte('holiday_date',y+'-12-31');
@@ -23,12 +23,15 @@ function calendar(el){
   let label=holiday||((weekend)?'휴무':(isToday?'오늘':''));
   let detail='';
   if(leave){label='연차';detail=leave}
+  if(el.id==='adminCalendar'&&adminCalendarDetails[key]){
+    detail=adminCalendarDetails[key].map(x=>'<span class="adminCalLine">'+x+'</span>').join('');
+  }
   if(att?.check_in){
     const mins=att.work_minutes||minutesBetween(att.check_in,att.check_out);
     label=timeKst(att.check_in)+'–'+(att.check_out?timeKst(att.check_out):'근무중');
     detail=att.check_out?hm(mins):(isToday?'근무중':'퇴근 미등록');
   }
-  el.insertAdjacentHTML('beforeend','<div class="day '+(weekend?'weekend ':'')+(holiday?'holiday ':'')+(isToday?'todayCell ':'')+'"><span class="num">'+d+'</span><small>'+label+'</small>'+(detail?'<small><b>'+detail+'</b></small>':'')+'</div>')
+  el.insertAdjacentHTML('beforeend','<div class="day '+(weekend?'weekend ':'')+(holiday?'holiday ':'')+(isToday?'todayCell ':'')+'"><span class="num">'+d+'</span><small>'+label+'</small>'+(detail?(el.id==='adminCalendar'?'<div class="adminCalDetails">'+detail+'</div>':'<small><b>'+detail+'</b></small>'):'')+'</div>')
  }
 }
 async function refreshCalendars(){await loadHolidays();calendar($('#adminCalendar'));calendar($('#employeeCalendar'))}
@@ -80,6 +83,14 @@ async function loadAdmin(){
    grants=(await db.from('annual_leave_grants').select('*').in('employee_id',ids).eq('leave_year',now.getFullYear())).data||[];
    leaveReq=(await db.from('annual_leave_requests').select('*').in('employee_id',ids).eq('status','approved').gte('start_date',ms).lte('start_date',me)).data||[]; approvedOts=(await db.from('overtime_requests').select('*').in('employee_id',ids).eq('status','approved').gte('work_date',ms).lte('work_date',me)).data||[];
  }
+ adminCalendarDetails={};
+ const year=now.getFullYear();
+ const yearGrants=(await db.from('annual_leave_grants').select('*').in('employee_id',ids).eq('leave_year',year)).data||[];
+ const yearLeaves=(await db.from('annual_leave_requests').select('*').in('employee_id',ids).eq('status','approved').gte('start_date',year+'-01-01').lte('start_date',year+'-12-31').order('start_date',{ascending:true})).data||[];
+ const cumulativeByEmployee={};
+ yearLeaves.forEach(l=>{cumulativeByEmployee[l.employee_id]=(cumulativeByEmployee[l.employee_id]||0)+Number(l.days||0);const total=yearGrants.filter(g=>g.employee_id===l.employee_id).reduce((s,g)=>s+Number(g.granted_days||0),0);let d=new Date(l.start_date+'T00:00:00Z'),e=new Date(l.end_date+'T00:00:00Z');while(d<=e){const k=d.toISOString().slice(0,10);(adminCalendarDetails[k]??=[]).push((ps.find(p=>p.id===l.employee_id)?.name||'직원')+' · 연차 ('+cumulativeByEmployee[l.employee_id]+'/'+total+')');d.setUTCDate(d.getUTCDate()+1)}});
+ monthAtt.forEach(a=>{const p=ps.find(x=>x.id===a.employee_id);if(!p)return;const mins=a.work_minutes||minutesBetween(a.check_in,a.check_out);const line=p.name+' · '+timeKst(a.check_in)+'→'+(a.check_out?timeKst(a.check_out):'근무중')+(a.check_out?' · '+hm(mins):'');(adminCalendarDetails[a.work_date]??=[]).push(line)});
+ calendar($('#adminCalendar'));
  const currentFor=id=>histories.find(x=>x.employee_id===id&&['active','leave'].includes(x.status));
  $('#employeeRows').innerHTML=ps.length?ps.map(p=>{const cur=currentFor(p.id),a=todayAtt.find(x=>x.employee_id===p.id),mins=a?(a.work_minutes||minutesBetween(a.check_in,a.check_out||new Date().toISOString())):0;const state=cur?(cur.status==='leave'?'휴직':a?.check_in?(a.check_out?'퇴근':'근무중'):'미출근'):'퇴사/입사대기';const granted=grants.filter(x=>x.employee_id===p.id).reduce((s,x)=>s+Number(x.granted_days||0),0),used=leaveReq.filter(x=>x.employee_id===p.id).reduce((s,x)=>s+Number(x.days||0),0);return '<tr><td>'+p.name+'</td><td>'+(cur?.job_description||p.job_description||'-')+'</td><td>'+timeKst(a?.check_in)+'</td><td>'+timeKst(a?.check_out)+'</td><td>'+hm(mins)+'</td><td>'+state+'</td><td><b>'+used+' / '+granted+'</b></td><td><button class="small manageEmp" data-id="'+p.id+'">관리</button></td></tr>'}).join(''):'<tr><td colspan="8">등록된 직원이 없습니다.</td></tr>';
  document.querySelectorAll('.manageEmp').forEach(b=>b.onclick=()=>openManage(b.dataset.id,ps,histories));
