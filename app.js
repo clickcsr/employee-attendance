@@ -1,20 +1,20 @@
 const SUPABASE_URL='https://wgrbolqqemcywxikhjzt.supabase.co';
 const SUPABASE_KEY='sb_publishable_hCQV9SPMKUD3cbgbJdjkMg_Z0y6AXGo';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const $=s=>document.querySelector(s); const now=new Date();
+const $=s=>document.querySelector(s); const now=new Date(); let adminView=new Date(now.getFullYear(),now.getMonth(),1), employeeView=new Date(now.getFullYear(),now.getMonth(),1);
 const kstDate=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const fmtMonth=d=>d.toLocaleDateString('ko-KR',{year:'numeric',month:'long',timeZone:'Asia/Seoul'});
 $('#adminMonth').textContent=fmtMonth(now); $('#employeeMonth').textContent=fmtMonth(now)+' 근태';
 let holidayMap={}; let employeeCalendarAttendance={}; let employeeCalendarLeaves={}; let adminCalendarDetails={};
 async function loadHolidays(){
- const y=now.getFullYear();
- const {data,error}=await db.from('holidays').select('holiday_date,name').gte('holiday_date',y+'-01-01').lte('holiday_date',y+'-12-31');
+ const years=[adminView.getFullYear(),employeeView.getFullYear()]; const y0=Math.min(...years),y1=Math.max(...years);
+ const {data,error}=await db.from('holidays').select('holiday_date,name').gte('holiday_date',y0+'-01-01').lte('holiday_date',y1+'-12-31');
  if(!error) holidayMap=Object.fromEntries((data||[]).map(x=>[x.holiday_date,x.name]));
 }
 function localDateKey(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
 function isNonWorkingToday(){const d=new Date(),w=d.getDay();return w===0||w===6||!!holidayMap[kstDate()]}
 function calendar(el){
- el.innerHTML=''; const y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1).getDay(),last=new Date(y,m+1,0).getDate();
+ el.innerHTML=''; const view=el.id==='adminCalendar'?adminView:employeeView; const y=view.getFullYear(),m=view.getMonth(),first=new Date(y,m,1).getDay(),last=new Date(y,m+1,0).getDate();
  ['일','월','화','수','목','금','토'].forEach(n=>el.insertAdjacentHTML('beforeend','<div class="dayname">'+n+'</div>'));
  for(let i=0;i<first;i++)el.insertAdjacentHTML('beforeend','<div></div>');
  for(let d=1;d<=last;d++){
@@ -34,7 +34,7 @@ function calendar(el){
   el.insertAdjacentHTML('beforeend','<div class="day '+(weekend?'weekend ':'')+(holiday?'holiday ':'')+(isToday?'todayCell ':'')+'"><span class="num">'+d+'</span><small>'+label+'</small>'+(detail?(el.id==='adminCalendar'?'<div class="adminCalDetails">'+detail+'</div>':'<small><b>'+detail+'</b></small>'):'')+'</div>')
  }
 }
-async function refreshCalendars(){await loadHolidays();calendar($('#adminCalendar'));calendar($('#employeeCalendar'))}
+async function refreshCalendars(){await loadHolidays();$('#adminCalMonth').textContent=fmtMonth(adminView);$('#employeeCalMonth').textContent=fmtMonth(employeeView);calendar($('#adminCalendar'));calendar($('#employeeCalendar'))}
 refreshCalendars();
 setInterval(()=>$('#clock').textContent=new Date().toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul'}),1000);
 function show(id){['login','admin','employee','resetPassword'].forEach(x=>$('#'+x).classList.add('hidden'));$('#'+id).classList.remove('hidden');$('#logout').classList.toggle('hidden',id==='login')}
@@ -70,21 +70,23 @@ function approvedOtMinutes(att,ot){
  const actualEnd=out<approvedEnd?out:approvedEnd;
  return actualEnd>regularEnd?Math.round((actualEnd-regularEnd)/60000):0
 }
-function monthBounds(){const y=now.getFullYear(),m=String(now.getMonth()+1).padStart(2,'0'),last=new Date(y,now.getMonth()+1,0).getDate();return [y+'-'+m+'-01',y+'-'+m+'-'+String(last).padStart(2,'0')]}
+function boundsFor(view){const y=view.getFullYear(),m=String(view.getMonth()+1).padStart(2,'0'),last=new Date(y,view.getMonth()+1,0).getDate();return [y+'-'+m+'-01',y+'-'+m+'-'+String(last).padStart(2,'0')]}
+function monthBounds(){return boundsFor(employeeView)}
 function timeKst(v){return v?new Date(v).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Seoul'}):'-'}
 async function loadAdmin(){
+ await loadHolidays(); $('#adminCalMonth').textContent=fmtMonth(adminView);
  const {data:profiles}=await db.from('profiles').select('*').eq('role','employee').order('name'); const ps=profiles||[];
  $('#employeeCount').textContent=ps.length; $('#leaveCount').textContent=ps.filter(x=>x.employment_status==='leave').length;
  const ids=ps.map(x=>x.id); let histories=[],todayAtt=[],monthAtt=[],grants=[],leaveReq=[],approvedOts=[];
  if(ids.length){
    histories=(await db.from('employment_history').select('*').in('employee_id',ids).order('hire_date',{ascending:false})).data||[];
    todayAtt=(await db.from('attendance').select('*').in('employee_id',ids).eq('work_date',kstDate())).data||[];
-   const [ms,me]=monthBounds(); monthAtt=(await db.from('attendance').select('*').in('employee_id',ids).gte('work_date',ms).lte('work_date',me)).data||[];
+   const [ms,me]=boundsFor(adminView); monthAtt=(await db.from('attendance').select('*').in('employee_id',ids).gte('work_date',ms).lte('work_date',me)).data||[];
    grants=(await db.from('annual_leave_grants').select('*').in('employee_id',ids).eq('leave_year',now.getFullYear())).data||[];
    leaveReq=(await db.from('annual_leave_requests').select('*').in('employee_id',ids).eq('status','approved').gte('start_date',ms).lte('start_date',me)).data||[]; approvedOts=(await db.from('overtime_requests').select('*').in('employee_id',ids).eq('status','approved').gte('work_date',ms).lte('work_date',me)).data||[];
  }
  adminCalendarDetails={};
- const year=now.getFullYear();
+ const year=adminView.getFullYear();
  const yearGrants=(await db.from('annual_leave_grants').select('*').in('employee_id',ids).eq('leave_year',year)).data||[];
  const yearLeaves=(await db.from('annual_leave_requests').select('*').in('employee_id',ids).eq('status','approved').gte('start_date',year+'-01-01').lte('start_date',year+'-12-31').order('start_date',{ascending:true})).data||[];
  const cumulativeByEmployee={};
@@ -107,8 +109,9 @@ async function loadAdmin(){
  document.querySelectorAll('.rejectLeave').forEach(b=>b.onclick=()=>reviewLeave(b.dataset.id,'rejected'))
 }
 async function loadEmployee(p){
+ window.currentEmployeeProfile=p; await loadHolidays(); $('#employeeCalMonth').textContent=fmtMonth(employeeView);
  $('#employeeName').textContent=p.name+'님'; $('#employeeJob').textContent='담당업무 · '+(p.job_description||'미지정');
- const y=now.getFullYear(),[ms,me]=monthBounds();
+ const y=employeeView.getFullYear(),[ms,me]=boundsFor(employeeView);
  const {data:gr}=await db.from('annual_leave_grants').select('granted_days').eq('employee_id',p.id).eq('leave_year',y);
  const granted=(gr||[]).reduce((s,x)=>s+Number(x.granted_days||0),0);
  const {data:lr}=await db.from('annual_leave_requests').select('days').eq('employee_id',p.id).eq('status','approved').gte('start_date',ms).lte('start_date',me);
@@ -195,3 +198,9 @@ db.auth.getSession().then(({data})=>{
    show('resetPassword');
  } else route(data.session)
 });
+function shiftMonth(which,delta){
+ if(which==='admin'){adminView=new Date(adminView.getFullYear(),adminView.getMonth()+delta,1);loadAdmin()}
+ else{employeeView=new Date(employeeView.getFullYear(),employeeView.getMonth()+delta,1);loadEmployee(window.currentEmployeeProfile)}
+}
+$('#adminPrev').onclick=()=>shiftMonth('admin',-1); $('#adminNext').onclick=()=>shiftMonth('admin',1);
+$('#employeePrev').onclick=()=>shiftMonth('employee',-1); $('#employeeNext').onclick=()=>shiftMonth('employee',1);
