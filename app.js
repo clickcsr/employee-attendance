@@ -1,3 +1,4 @@
+try{document.getElementById('appStatus').textContent='프로그램 준비 완료';}catch(e){}
 const SUPABASE_URL='https://wgrbolqqemcywxikhjzt.supabase.co';
 const SUPABASE_KEY='sb_publishable_hCQV9SPMKUD3cbgbJdjkMg_Z0y6AXGo';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
