@@ -23,14 +23,14 @@ function calendar(el){
   const off=weekend||holiday; const att=employeeCalendarAttendance[key], leave=employeeCalendarLeaves[key];
   let label=holiday||((weekend)?'휴무':(isToday?'오늘':''));
   let detail='';
-  if(leave){label='';detail='<span class="calEvent '+(leave.startsWith('반차')?'half':'annual')+'">'+leave+'</span>'}
+  if(leave){label='';const half=leave.startsWith('__HALF__');const txt=leave.replace('__HALF__','').replace('__ANNUAL__','');detail='<span class="calEvent '+(half?'half':'annual')+'">'+txt+'</span>'}
   if(el.id==='adminCalendar'&&adminCalendarDetails[key]){
-    detail=adminCalendarDetails[key].map(x=>adminApprovedOtMap[x]?'<button type="button" class="calEvent overtime otApprovedItem" data-token="'+x+'">'+adminApprovedOtMap[x].employee_name+' · 초과 '+String(adminApprovedOtMap[x].requested_start).slice(0,5)+'→'+String(adminApprovedOtMap[x].requested_end).slice(0,5)+' · 승인</button>':x).join('');
+    detail=adminCalendarDetails[key].map(x=>adminApprovedOtMap[x]?'<button type="button" class="calEvent overtime otApprovedItem" data-token="'+x+'">'+adminApprovedOtMap[x].employee_name+' '+String(adminApprovedOtMap[x].requested_start).slice(0,5)+'→'+String(adminApprovedOtMap[x].requested_end).slice(0,5)+' '+adminApprovedOtMap[x].duration</button>':x).join('');
   }
   if(att?.check_in){
     const mins=att.work_minutes||minutesBetween(att.check_in,att.check_out);
     label='';
-    detail='<span class="calEvent normal">'+timeKst(att.check_in)+'→'+(att.check_out?timeKst(att.check_out):'근무중')+(att.check_out?' · '+hm(mins):'')+'</span>';
+    detail='<span class="calEvent normal">'+timeKst(att.check_in)+'→'+(att.check_out?timeKst(att.check_out):'근무중')+(att.check_out?' '+hm(mins):'')+'</span>';
   }
   el.insertAdjacentHTML('beforeend','<div class="day '+(weekend?'weekend ':'')+(holiday?'holiday ':'')+(isToday?'todayCell ':'')+'"><span class="num">'+d+'</span><small>'+label+'</small>'+(detail?'<div class="calEvents">'+String(detail).split('|||').join('')+'</div>':'')+'</div>')
  }
@@ -94,8 +94,8 @@ async function loadAdmin(){
  const yearGrants=(await db.from('annual_leave_grants').select('*').in('employee_id',ids).eq('leave_year',year)).data||[];
  const yearLeaves=(await db.from('annual_leave_requests').select('*').in('employee_id',ids).eq('status','approved').gte('start_date',year+'-01-01').lte('start_date',year+'-12-31').order('start_date',{ascending:true})).data||[];
  const cumulativeByEmployee={};
- yearLeaves.forEach(l=>{cumulativeByEmployee[l.employee_id]=(cumulativeByEmployee[l.employee_id]||0)+Number(l.days||0);const total=yearGrants.filter(g=>g.employee_id===l.employee_id).reduce((s,g)=>s+Number(g.granted_days||0),0);let d=new Date(l.start_date+'T00:00:00Z'),e=new Date(l.end_date+'T00:00:00Z');while(d<=e){const k=d.toISOString().slice(0,10);(adminCalendarDetails[k]??=[]).push('<span class="calEvent '+(Number(l.days)===0.5?'half':'annual')+'">'+(ps.find(p=>p.id===l.employee_id)?.name||'직원')+' · '+(Number(l.days)===0.5?'반차':'연차')+' ('+cumulativeByEmployee[l.employee_id]+'/'+total+')</span>');d.setUTCDate(d.getUTCDate()+1)}});
- monthAtt.forEach(a=>{const p=ps.find(x=>x.id===a.employee_id);if(!p)return;const mins=a.work_minutes||minutesBetween(a.check_in,a.check_out);const line='<span class="calEvent normal">'+p.name+' · '+timeKst(a.check_in)+'→'+(a.check_out?timeKst(a.check_out):'근무중')+(a.check_out?' · '+hm(mins):'')+'</span>';(adminCalendarDetails[a.work_date]??=[]).push(line)});
+ yearLeaves.forEach(l=>{cumulativeByEmployee[l.employee_id]=(cumulativeByEmployee[l.employee_id]||0)+Number(l.days||0);const total=yearGrants.filter(g=>g.employee_id===l.employee_id).reduce((s,g)=>s+Number(g.granted_days||0),0);let d=new Date(l.start_date+'T00:00:00Z'),e=new Date(l.end_date+'T00:00:00Z');while(d<=e){const k=d.toISOString().slice(0,10);(adminCalendarDetails[k]??=[]).push('<span class="calEvent '+(Number(l.days)===0.5?'half':'annual')+'">'+(ps.find(p=>p.id===l.employee_id)?.name||'직원')+' '+cumulativeByEmployee[l.employee_id]+'/'+total+'</span>');d.setUTCDate(d.getUTCDate()+1)}});
+ monthAtt.forEach(a=>{const p=ps.find(x=>x.id===a.employee_id);if(!p)return;const mins=a.work_minutes||minutesBetween(a.check_in,a.check_out);const line='<span class="calEvent normal">'+p.name+' '+timeKst(a.check_in)+'→'+(a.check_out?timeKst(a.check_out):'근무중')+(a.check_out?' '+hm(mins):'')+'</span>';(adminCalendarDetails[a.work_date]??=[]).push(line)});
  adminApprovedOtMap={};
  approvedOts.forEach(o=>{const p=ps.find(x=>x.id===o.employee_id);if(!p)return;const start=String(o.requested_start).slice(0,5),end=String(o.requested_end).slice(0,5);const mins=Math.max(0,(Number(end.slice(0,2))*60+Number(end.slice(3,5)))-(Number(start.slice(0,2))*60+Number(start.slice(3,5))));const token='__OT_'+o.id+'__';(adminCalendarDetails[o.work_date]??=[]).push(token);adminApprovedOtMap[token]={...o,employee_name:p.name,duration:hm(mins)}});
  calendar($('#adminCalendar'));
@@ -129,11 +129,11 @@ async function loadEmployee(p){
  employeeCalendarLeaves={};
  const approvedYear=(await db.from('annual_leave_requests').select('start_date,end_date,days').eq('employee_id',p.id).eq('status','approved').gte('start_date',y+'-01-01').lte('start_date',y+'-12-31').order('start_date',{ascending:true})).data||[];
  let cumulative=0;
- approvedYear.forEach(l=>{cumulative+=Number(l.days||0);let d=new Date(l.start_date+'T00:00:00Z'),e=new Date(l.end_date+'T00:00:00Z');while(d<=e){const k=d.toISOString().slice(0,10);employeeCalendarLeaves[k]=(Number(l.days)===0.5?'반차':'연차')+' ('+cumulative+'/'+granted+')';d.setUTCDate(d.getUTCDate()+1)}});
+ approvedYear.forEach(l=>{cumulative+=Number(l.days||0);let d=new Date(l.start_date+'T00:00:00Z'),e=new Date(l.end_date+'T00:00:00Z');while(d<=e){const k=d.toISOString().slice(0,10);employeeCalendarLeaves[k]=(Number(l.days)===0.5?'__HALF__':'__ANNUAL__')+cumulative+'/'+granted;d.setUTCDate(d.getUTCDate()+1)}});
  calendar($('#employeeCalendar'));
  const monthMinutes=(ma||[]).reduce((s,a)=>s+(a.work_minutes||minutesBetween(a.check_in,a.check_out)),0); $('#monthHours').textContent=hm(monthMinutes);
  const {data:ots}=await db.from('overtime_requests').select('*').eq('employee_id',p.id).eq('status','approved').gte('work_date',ms).lte('work_date',me);
- (ots||[]).forEach(o=>{const k=o.work_date,txt='<span class="calEvent overtime">초과 '+String(o.requested_start).slice(0,5)+'→'+String(o.requested_end).slice(0,5)+'</span>';employeeCalendarLeaves[k]=(employeeCalendarLeaves[k]?employeeCalendarLeaves[k]+'|||':'')+txt});
+ (ots||[]).forEach(o=>{const k=o.work_date,txt='<span class="calEvent overtime">'+String(o.requested_start).slice(0,5)+'→'+String(o.requested_end).slice(0,5)+'</span>';employeeCalendarLeaves[k]=(employeeCalendarLeaves[k]?employeeCalendarLeaves[k]+'|||':'')+txt});
  const otMinutes=(ma||[]).reduce((s,a)=>s+approvedOtMinutes(a,(ots||[]).find(o=>o.work_date===a.work_date)),0); $('#monthOvertime').textContent=hm(otMinutes);
  const {data:a}=await db.from('attendance').select('*').eq('employee_id',p.id).eq('work_date',kstDate()).maybeSingle();
  if(a){$('#inTime').textContent=a.check_in?timeKst(a.check_in):'미등록';$('#outTime').textContent=a.check_out?timeKst(a.check_out):'미등록';$('#todayHours').textContent=hm(a.work_minutes||minutesBetween(a.check_in,a.check_out||new Date().toISOString()));$('#checkIn').disabled=!!a.check_in;$('#checkOut').disabled=!a.check_in||!!a.check_out}else{$('#inTime').textContent='미등록';$('#outTime').textContent='미등록';$('#todayHours').textContent='00:00';$('#checkIn').disabled=isNonWorkingToday();$('#checkOut').disabled=true}
