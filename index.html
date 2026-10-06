@@ -23,11 +23,11 @@
 <div class="grid2"><div class="card"><h3>오늘 근태 및 직원 관리</h3><table><thead><tr><th>직원</th><th>업무</th><th>출근</th><th>퇴근</th><th>오늘 근무</th><th>상태</th><th>관리</th></tr></thead><tbody id="employeeRows"><tr><td colspan="4">등록된 직원이 없습니다.</td></tr></tbody></table></div>
 <div class="card"><h3>초과근무 승인</h3><div id="overtimeRequests" class="request"><span class="muted">승인 대기 신청이 없습니다.</span></div></div></div>
 <div class="card"><div class="calhead"><h3>월간 근태 캘린더</h3><span>공휴일 · 토/일 자동 휴무</span></div><div id="adminCalendar" class="calendar"></div></div>
-<div class="card"><h3>월별 누적 근무시간</h3><table><thead><tr><th>직원</th><th>근무시간</th><th>연차</th></tr></thead><tbody id="monthlyRows"><tr><td colspan="3">등록된 직원이 없습니다.</td></tr></tbody></table></div>
+<div class="card"><h3>월별 누적 근무시간</h3><table><thead><tr><th>직원</th><th>총 기록시간</th><th>승인 초과근무</th><th>인정 합계</th><th>연차</th></tr></thead><tbody id="monthlyRows"><tr><td colspan="3">등록된 직원이 없습니다.</td></tr></tbody></table></div>
 </section>
 <section id="employee" class="hidden">
 <div class="topline"><div><h2 id="employeeName">직원</h2><p class="muted" id="employeeJob"></p></div><div class="leave"><b id="leaveUsage">0 / 0</b><span>사용 연차</span></div></div>
-<div class="stats"><div class="stat"><b>09:00</b><span>정상 출근</span></div><div class="stat"><b>16:00</b><span>정상 퇴근</span></div><div class="stat"><b id="monthHours">00:00</b><span>이번 달 근무</span></div></div>
+<div class="stats"><div class="stat"><b>09:00</b><span>정상 출근</span></div><div class="stat"><b>16:00</b><span>정상 퇴근</span></div><div class="stat"><b id="monthHours">00:00</b><span>이번 달 총 기록</span></div><div class="stat"><b id="monthOvertime">00:00</b><span>승인 초과근무</span></div></div>
 <div class="card today"><h3>오늘 근무</h3><div id="clock"></div><p>출근 <b id="inTime">미등록</b> · 퇴근 <b id="outTime">미등록</b></p><p>당일 근무시간 <b id="todayHours">00:00</b></p><div class="actions"><button id="checkIn">출근하기</button><button id="checkOut" class="secondary" disabled>퇴근하기</button><button id="overtime" class="ghost">초과근무 신청</button></div></div>
 <div class="card"><div class="calhead"><h3 id="employeeMonth"></h3><span>오늘 날짜에서만 출·퇴근 가능</span></div><div id="employeeCalendar" class="calendar"></div></div>
 </section></main></div>
