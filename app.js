@@ -5,7 +5,26 @@ const $=s=>document.querySelector(s); const now=new Date();
 const kstDate=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const fmtMonth=d=>d.toLocaleDateString('ko-KR',{year:'numeric',month:'long',timeZone:'Asia/Seoul'});
 $('#adminMonth').textContent=fmtMonth(now); $('#employeeMonth').textContent=fmtMonth(now)+' 근태';
-function calendar(el){el.innerHTML='';const y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1).getDay(),last=new Date(y,m+1,0).getDate();['일','월','화','수','목','금','토'].forEach(n=>el.insertAdjacentHTML('beforeend','<div class="dayname">'+n+'</div>'));for(let i=0;i<first;i++)el.insertAdjacentHTML('beforeend','<div></div>');for(let d=1;d<=last;d++){const dt=new Date(y,m,d),w=dt.getDay(),isToday=d===now.getDate(),weekend=w===0||w===6;el.insertAdjacentHTML('beforeend','<div class="day '+(weekend?'weekend ':'')+(isToday?'todayCell ':'')+'"><span class="num">'+d+'</span><small>'+(weekend?'휴무':isToday?'오늘':'')+'</small></div>')}} calendar($('#adminCalendar'));calendar($('#employeeCalendar'));
+let holidayMap={};
+async function loadHolidays(){
+ const y=now.getFullYear();
+ const {data,error}=await db.from('holidays').select('holiday_date,name').gte('holiday_date',y+'-01-01').lte('holiday_date',y+'-12-31');
+ if(!error) holidayMap=Object.fromEntries((data||[]).map(x=>[x.holiday_date,x.name]));
+}
+function localDateKey(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+function isNonWorkingToday(){const d=new Date(),w=d.getDay();return w===0||w===6||!!holidayMap[kstDate()]}
+function calendar(el){
+ el.innerHTML=''; const y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1).getDay(),last=new Date(y,m+1,0).getDate();
+ ['일','월','화','수','목','금','토'].forEach(n=>el.insertAdjacentHTML('beforeend','<div class="dayname">'+n+'</div>'));
+ for(let i=0;i<first;i++)el.insertAdjacentHTML('beforeend','<div></div>');
+ for(let d=1;d<=last;d++){
+  const dt=new Date(y,m,d),w=dt.getDay(),isToday=d===now.getDate(),weekend=w===0||w===6,key=localDateKey(y,m,d),holiday=holidayMap[key];
+  const off=weekend||holiday; const label=holiday||((weekend)?'휴무':(isToday?'오늘':''));
+  el.insertAdjacentHTML('beforeend','<div class="day '+(weekend?'weekend ':'')+(holiday?'holiday ':'')+(isToday?'todayCell ':'')+'"><span class="num">'+d+'</span><small>'+label+'</small></div>')
+ }
+}
+async function refreshCalendars(){await loadHolidays();calendar($('#adminCalendar'));calendar($('#employeeCalendar'))}
+refreshCalendars();
 setInterval(()=>$('#clock').textContent=new Date().toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul'}),1000);
 function show(id){['login','admin','employee','resetPassword'].forEach(x=>$('#'+x).classList.add('hidden'));$('#'+id).classList.remove('hidden');$('#logout').classList.toggle('hidden',id==='login')}
 async function profileFor(user){const {data,error}=await db.from('profiles').select('*').eq('id',user.id).single();if(error)throw error;return data}
@@ -60,9 +79,11 @@ async function loadEmployee(p){
  const {data:ma}=await db.from('attendance').select('*').eq('employee_id',p.id).gte('work_date',ms).lte('work_date',me);
  const monthMinutes=(ma||[]).reduce((s,a)=>s+(a.work_minutes||minutesBetween(a.check_in,a.check_out)),0); $('#monthHours').textContent=hm(monthMinutes);
  const {data:a}=await db.from('attendance').select('*').eq('employee_id',p.id).eq('work_date',kstDate()).maybeSingle();
- if(a){$('#inTime').textContent=a.check_in?timeKst(a.check_in):'미등록';$('#outTime').textContent=a.check_out?timeKst(a.check_out):'미등록';$('#todayHours').textContent=hm(a.work_minutes||minutesBetween(a.check_in,a.check_out||new Date().toISOString()));$('#checkIn').disabled=!!a.check_in;$('#checkOut').disabled=!a.check_in||!!a.check_out}else{$('#inTime').textContent='미등록';$('#outTime').textContent='미등록';$('#todayHours').textContent='00:00';$('#checkIn').disabled=false;$('#checkOut').disabled=true}
+ if(a){$('#inTime').textContent=a.check_in?timeKst(a.check_in):'미등록';$('#outTime').textContent=a.check_out?timeKst(a.check_out):'미등록';$('#todayHours').textContent=hm(a.work_minutes||minutesBetween(a.check_in,a.check_out||new Date().toISOString()));$('#checkIn').disabled=!!a.check_in;$('#checkOut').disabled=!a.check_in||!!a.check_out}else{$('#inTime').textContent='미등록';$('#outTime').textContent='미등록';$('#todayHours').textContent='00:00';$('#checkIn').disabled=isNonWorkingToday();$('#checkOut').disabled=true}
+ if(isNonWorkingToday()&&!a?.check_in){const reason=holidayMap[kstDate()]||'주말';$('#todayHours').textContent=reason+' · 휴무'}
 }
-$('#checkIn').onclick=async()=>{const {data:{user}}=await db.auth.getUser();const {error}=await db.from('attendance').insert({employee_id:user.id,work_date:kstDate(),check_in:new Date().toISOString()});if(error)return alert(error.message);location.reload()};
+
+$('#checkIn').onclick=async()=>{if(isNonWorkingToday())return alert('오늘은 '+(holidayMap[kstDate()]||'주말')+'로 일반 근무일이 아닙니다.');const {data:{user}}=await db.auth.getUser();const {error}=await db.from('attendance').insert({employee_id:user.id,work_date:kstDate(),check_in:new Date().toISOString()});if(error)return alert(error.message);location.reload()};
 $('#checkOut').onclick=async()=>{const {data:{user}}=await db.auth.getUser();const {data:a,error:rerr}=await db.from('attendance').select('*').eq('employee_id',user.id).eq('work_date',kstDate()).single();if(rerr)return alert(rerr.message);const out=new Date().toISOString(),mins=minutesBetween(a.check_in,out);const {error}=await db.from('attendance').update({check_out:out,work_minutes:mins}).eq('employee_id',user.id).eq('work_date',kstDate());if(error)return alert(error.message);location.reload()};
 $('#overtime').onclick=()=>$('#otDialog').showModal();$('#submitOt').onclick=async e=>{e.preventDefault();const reason=$('#otReason').value.trim();if(!reason)return alert('사유를 입력하세요.');const {data:{user}}=await db.auth.getUser();const {error}=await db.from('overtime_requests').insert({employee_id:user.id,work_date:kstDate(),requested_start:'16:00',requested_end:$('#otEnd').value,reason});if(error)return alert(error.message);$('#otDialog').close();alert('초과근무 신청이 등록되었습니다.')};
 function actionFields(){
