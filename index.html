@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>직원 근태관리</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<div class="shell">
+<header><div><h1>직원 근태관리</h1><p>평일 09:00–16:00 · 대한민국 공휴일 적용</p></div><button id="logout" class="ghost hidden">로그아웃</button></header>
+<main>
+<section id="login" class="card login">
+<h2>로그인</h2><p class="muted">데모 계정으로 화면을 확인할 수 있습니다.</p>
+<label>계정<input id="userid" autocomplete="username" placeholder="admin 또는 employee1"></label>
+<label>비밀번호<input id="password" type="password" autocomplete="current-password" placeholder="demo"></label>
+<button id="loginBtn">로그인</button><p id="loginMsg" class="error"></p>
+<div class="demo">관리자: admin / demo<br>직원: employee1 / demo</div>
+</section>
+
+<section id="admin" class="hidden">
+<div class="topline"><div><h2>관리자 대시보드</h2><p class="muted" id="adminMonth"></p></div><button id="addEmployee">+ 직원 등록</button></div>
+<div class="stats"><div class="stat"><b>3</b><span>등록 직원</span></div><div class="stat"><b>2</b><span>오늘 출근</span></div><div class="stat"><b>1</b><span>승인 대기</span></div><div class="stat"><b>0</b><span>휴직</span></div></div>
+<div class="grid2">
+<div class="card"><h3>오늘 근태</h3><table><thead><tr><th>직원</th><th>업무</th><th>출근</th><th>퇴근</th><th>근무</th></tr></thead><tbody>
+<tr><td>김민수</td><td>회계</td><td>08:54</td><td>–</td><td>근무중</td></tr>
+<tr><td>이서연</td><td>영업관리</td><td>09:02</td><td>–</td><td>근무중</td></tr>
+<tr><td>박지훈</td><td>상품관리</td><td>–</td><td>–</td><td>연차</td></tr></tbody></table></div>
+<div class="card"><h3>초과근무 승인</h3><div class="request"><b>김민수 · 오늘</b><span>16:00 → 18:00 (2시간)</span><small>월말 자료 정리</small><div><button class="small approve">승인</button><button class="small danger">거절</button></div></div></div>
+</div>
+<div class="card"><div class="calhead"><h3>월간 근태 캘린더</h3><span>공휴일 · 토/일 자동 휴무</span></div><div id="adminCalendar" class="calendar"></div></div>
+<div class="card"><h3>월별 누적 근무시간</h3><table><thead><tr><th>직원</th><th>기본근무</th><th>승인 초과근무</th><th>합계</th><th>연차</th></tr></thead><tbody>
+<tr><td>김민수</td><td>70:00</td><td>02:00</td><td>72:00</td><td>3 / 15</td></tr>
+<tr><td>이서연</td><td>68:00</td><td>01:30</td><td>69:30</td><td>5 / 15</td></tr>
+<tr><td>박지훈</td><td>63:00</td><td>00:00</td><td>63:00</td><td>7 / 15</td></tr></tbody></table></div>
+</section>
+
+<section id="employee" class="hidden">
+<div class="topline"><div><h2>김민수님</h2><p class="muted">담당업무 · 회계</p></div><div class="leave"><b>3 / 15</b><span>사용 연차</span></div></div>
+<div class="stats"><div class="stat"><b>09:00</b><span>정상 출근</span></div><div class="stat"><b>16:00</b><span>정상 퇴근</span></div><div class="stat"><b id="monthHours">72:00</b><span>이번 달 근무</span></div></div>
+<div class="card today"><h3>오늘 근무</h3><div id="clock"></div><p>출근 <b id="inTime">미등록</b> · 퇴근 <b id="outTime">미등록</b></p><div class="actions"><button id="checkIn">출근하기</button><button id="checkOut" class="secondary" disabled>퇴근하기</button><button id="overtime" class="ghost">초과근무 신청</button></div></div>
+<div class="card"><div class="calhead"><h3 id="employeeMonth"></h3><span>오늘 날짜에서만 출·퇴근 가능</span></div><div id="employeeCalendar" class="calendar"></div></div>
+</section>
+</main></div>
+<dialog id="otDialog"><form method="dialog"><h3>초과근무 신청</h3><label>예상 종료시간<input type="time" value="18:00"></label><label>사유<textarea placeholder="초과근무 사유를 입력하세요"></textarea></label><div class="dialogActions"><button value="cancel" class="ghost">취소</button><button id="submitOt" value="default">신청</button></div></form></dialog>
+<script src="app.js"></script></body></html>
