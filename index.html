@@ -21,14 +21,15 @@
 <div class="topline"><div><h2>관리자 대시보드</h2><p class="muted" id="adminMonth"></p></div><button id="addEmployee">+ 직원 등록</button></div>
 <div class="stats"><div class="stat"><b id="employeeCount">0</b><span>등록 직원</span></div><div class="stat"><b id="todayCount">0</b><span>오늘 출근</span></div><div class="stat"><b id="pendingCount">0</b><span>승인 대기</span></div><div class="stat"><b id="leaveCount">0</b><span>휴직</span></div></div>
 <div class="grid2"><div class="card"><h3>오늘 근태 및 직원 관리</h3><table><thead><tr><th>직원</th><th>업무</th><th>출근</th><th>퇴근</th><th>오늘 근무</th><th>상태</th><th>관리</th></tr></thead><tbody id="employeeRows"><tr><td colspan="4">등록된 직원이 없습니다.</td></tr></tbody></table></div>
-<div class="card"><h3>초과근무 승인</h3><div id="overtimeRequests" class="request"><span class="muted">승인 대기 신청이 없습니다.</span></div></div></div>
+<div><div class="card"><h3>초과근무 승인</h3><div id="overtimeRequests" class="request"><span class="muted">승인 대기 신청이 없습니다.</span></div></div>
+<div class="card"><h3>연차 승인</h3><div id="leaveRequests" class="request"><span class="muted">승인 대기 신청이 없습니다.</span></div></div></div></div>
 <div class="card"><div class="calhead"><h3>월간 근태 캘린더</h3><span>공휴일 · 토/일 자동 휴무</span></div><div id="adminCalendar" class="calendar"></div></div>
 <div class="card"><h3>월별 누적 근무시간</h3><table><thead><tr><th>직원</th><th>총 기록시간</th><th>승인 초과근무</th><th>인정 합계</th><th>연차</th></tr></thead><tbody id="monthlyRows"><tr><td colspan="3">등록된 직원이 없습니다.</td></tr></tbody></table></div>
 </section>
 <section id="employee" class="hidden">
 <div class="topline"><div><h2 id="employeeName">직원</h2><p class="muted" id="employeeJob"></p></div><div class="leave"><b id="leaveUsage">0 / 0</b><span>사용 연차</span></div></div>
 <div class="stats"><div class="stat"><b>09:00</b><span>정상 출근</span></div><div class="stat"><b>16:00</b><span>정상 퇴근</span></div><div class="stat"><b id="monthHours">00:00</b><span>이번 달 총 기록</span></div><div class="stat"><b id="monthOvertime">00:00</b><span>승인 초과근무</span></div></div>
-<div class="card today"><h3>오늘 근무</h3><div id="clock"></div><p>출근 <b id="inTime">미등록</b> · 퇴근 <b id="outTime">미등록</b></p><p>당일 근무시간 <b id="todayHours">00:00</b></p><div class="actions"><button id="checkIn">출근하기</button><button id="checkOut" class="secondary" disabled>퇴근하기</button><button id="overtime" class="ghost">초과근무 신청</button></div></div>
+<div class="card today"><h3>오늘 근무</h3><div id="clock"></div><p>출근 <b id="inTime">미등록</b> · 퇴근 <b id="outTime">미등록</b></p><p>당일 근무시간 <b id="todayHours">00:00</b></p><div class="actions"><button id="checkIn">출근하기</button><button id="checkOut" class="secondary" disabled>퇴근하기</button><button id="overtime" class="ghost">초과근무 신청</button><button id="annualLeave" class="ghost">연차 신청</button></div></div>
 <div class="card"><div class="calhead"><h3 id="employeeMonth"></h3><span>오늘 날짜에서만 출·퇴근 가능</span></div><div id="employeeCalendar" class="calendar"></div></div>
 </section></main></div>
 <dialog id="manageDialog"><form id="manageForm"><h3 id="manageTitle">직원 관리</h3><input id="manageEmployeeId" type="hidden">
@@ -44,5 +45,10 @@
 <p class="muted">등록하면 직원 이메일로 최초 비밀번호 설정용 초대 메일을 발송합니다. 입사일과 연차는 계정 생성 후 관리자 화면에서 별도로 설정합니다.</p>
 <div class="dialogActions"><button type="button" id="cancelEmployee" class="ghost">취소</button><button type="submit">직원 등록</button></div>
 <p id="employeeFormMsg" class="error"></p></form></dialog>
+<dialog id="leaveDialog"><form method="dialog"><h3>연차 신청</h3>
+<label>시작일<input id="leaveStart" type="date"></label><label>종료일<input id="leaveEnd" type="date"></label>
+<label>사용 일수<input id="leaveDays" type="number" min="0.5" step="0.5" value="1"></label>
+<label>사유<textarea id="leaveReason" placeholder="선택 입력"></textarea></label>
+<div class="dialogActions"><button value="cancel" class="ghost">취소</button><button id="submitLeave" value="default">신청</button></div></form></dialog>
 <dialog id="otDialog"><form method="dialog"><h3>초과근무 신청</h3><label>초과근무 날짜<input id="otDate" type="date"></label><label>예상 종료시간<input id="otEnd" type="time" value="18:00"></label><label>사유<textarea id="otReason" placeholder="초과근무 사유를 입력하세요"></textarea></label><div class="dialogActions"><button value="cancel" class="ghost">취소</button><button id="submitOt" value="default">신청</button></div></form></dialog>
 <script src="app.js?v=20261006-1841"></script></body></html>
