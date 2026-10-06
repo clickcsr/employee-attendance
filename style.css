@@ -15,3 +15,7 @@
 .calEvent.annual{background:#F28585}
 button.calEvent{cursor:pointer;font-family:inherit}
 @media(max-width:760px){.calEvent{font-size:9px;padding:3px 4px}}
+
+.calEvent{padding:3px 4px;font-size:9px;letter-spacing:-.25px}
+#adminCalendar .day{padding:5px}
+#adminCalendar .adminCalDetails,#adminCalendar .calEvents{gap:2px}
