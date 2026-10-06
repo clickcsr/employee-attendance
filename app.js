@@ -38,7 +38,7 @@ $('#addEmployee').onclick=()=>$('#employeeDialog').showModal();
 $('#cancelEmployee').onclick=()=>$('#employeeDialog').close();
 $('#employeeForm').onsubmit=async(e)=>{
  e.preventDefault(); $('#employeeFormMsg').textContent='직원 계정을 생성하는 중...';
- const payload={name:$('#empName').value.trim(),email:$('#empEmail').value.trim(),job_description:$('#empJob').value.trim(),hire_date:$('#empHire').value||null,annual_leave_total:Number($('#empLeave').value||0),access_enabled:$('#empAccess').checked};
+ const payload={name:$('#empName').value.trim(),email:$('#empEmail').value.trim(),job_description:$('#empJob').value.trim(),access_enabled:$('#empAccess').checked};
  const {data,error}=await db.functions.invoke('create-employee',{body:payload});
  if(error){$('#employeeFormMsg').textContent='등록 실패: '+error.message;return}
  if(data?.error){$('#employeeFormMsg').textContent='등록 실패: '+data.error;return}
