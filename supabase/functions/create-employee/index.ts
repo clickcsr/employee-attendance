@@ -38,8 +38,8 @@ serve(async (req) => {
       name: body.name,
       role: "employee",
       job_description: body.job_description || null,
-      hire_date: body.hire_date || null,
-      annual_leave_total: body.annual_leave_total || 0,
+      hire_date: null,
+      annual_leave_total: 0,
       access_enabled: body.access_enabled !== false,
       employment_status: "active"
     })
